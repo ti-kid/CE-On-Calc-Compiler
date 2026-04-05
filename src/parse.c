@@ -1390,9 +1390,13 @@ static Node *lvar_initializer(Token **rest, Token *tok, Obj *var) {
 
 static uint64_t read_buf(char *buf, int sz) {
   if (sz == 1)
-    return *buf;
+    return *(uint8_t *)buf;
   if (sz == 2)
     return *(uint16_t *)buf;
+  if (sz == 3) {
+    // 24-bit read (eZ80 int size)
+    return (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16);
+  }
   if (sz == 4)
     return *(uint32_t *)buf;
   if (sz == 8)
@@ -1405,6 +1409,12 @@ static void write_buf(char *buf, uint64_t val, int sz) {
     *buf = val;
   else if (sz == 2)
     *(uint16_t *)buf = val;
+  else if (sz == 3) {
+    // 24-bit write (eZ80 int size)
+    buf[0] = val & 0xFF;
+    buf[1] = (val >> 8) & 0xFF;
+    buf[2] = (val >> 16) & 0xFF;
+  }
   else if (sz == 4)
     *(uint32_t *)buf = val;
   else if (sz == 8)

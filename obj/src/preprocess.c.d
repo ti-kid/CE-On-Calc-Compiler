@@ -1,0 +1,34 @@
+obj/src/preprocess.c.bc: src/preprocess.c src/chibicc.h \
+  /home/masjidhamzamath/ez80/CEdev/include/assert.h \
+  /home/masjidhamzamath/ez80/CEdev/include/cdefs.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ctype.h \
+  /home/masjidhamzamath/ez80/CEdev/include/errno.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdarg.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdbool.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdint.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdio.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdlib.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stdnoreturn.h \
+  /home/masjidhamzamath/ez80/CEdev/include/string.h \
+  /home/masjidhamzamath/ez80/CEdev/include/tice.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/basicusb.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/lcd.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/power.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/rtc.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/timers.h \
+  /home/masjidhamzamath/ez80/CEdev/include/sys/util.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/error.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/flags.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/getcsc.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/getkey.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/graph.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/real.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/info.h \
+  /home/masjidhamzamath/ez80/CEdev/include/stddef.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/python.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/screen.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/ui.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/tokens.h \
+  /home/masjidhamzamath/ez80/CEdev/include/ti/vars.h src/memfile.h \
+  src/builtin_headers.h \
+  /home/masjidhamzamath/ez80/CEdev/include/fileioc.h

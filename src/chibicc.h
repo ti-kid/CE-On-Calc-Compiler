@@ -1,11 +1,6 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-/*
-#include <glob.h>
-#include <libgen.h>
-*/
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,16 +8,10 @@
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <string.h>
-/*
-#include <strings.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
-*/
 
 #include <tice.h>
+
+#include "memfile.h"
 
 #define MAX(x, y) ((x) < (y) ? (y) : (x))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -30,6 +19,18 @@
 #ifndef __GNUC__
 # define __attribute__(x)
 #endif
+
+// CE toolchain may lack strncasecmp — provide inline fallback
+static inline int ce_strncasecmp(const char *s1, const char *s2, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    int c1 = tolower((unsigned char)s1[i]);
+    int c2 = tolower((unsigned char)s2[i]);
+    if (c1 != c2) return c1 - c2;
+    if (c1 == 0) return 0;
+  }
+  return 0;
+}
+#define strncasecmp ce_strncasecmp
 
 typedef struct Type Type;
 typedef struct Node Node;
@@ -331,14 +332,7 @@ struct Type {
   bool is_atomic;     // true if _Atomic
   Type *origin;       // for type compatibility check
 
-  // Pointer-to or array-of type. We intentionally use the same member
-  // to represent pointer/array duality in C.
-  //
-  // In many contexts in which a pointer is expected, we examine this
-  // member instead of "kind" member to determine whether a type is a
-  // pointer or not. That means in many contexts "array of T" is
-  // naturally handled as if it were "pointer to T", as required by
-  // the C spec.
+  // Pointer-to or array-of type.
   Type *base;
 
   // Declaration
@@ -414,7 +408,7 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Obj *prog, FILE *out);
+void codegen(Obj *prog, OutBuf *out);
 int align_to(int n, int align);
 
 //

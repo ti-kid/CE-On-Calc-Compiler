@@ -1,21 +1,30 @@
 #include "chibicc.h"
 
+// eZ80 CE type sizes (ADL mode):
+//   char  = 1 byte (8-bit)
+//   short = 2 bytes (16-bit)
+//   int   = 3 bytes (24-bit, native register size)
+//   long  = 4 bytes (32-bit)
+//   ptr   = 3 bytes (24-bit address space)
+//   float/double = 4 bytes (software emulation, not yet supported)
+
 Type *ty_void = &(Type){TY_VOID, 1, 1};
 Type *ty_bool = &(Type){TY_BOOL, 1, 1};
 
 Type *ty_char = &(Type){TY_CHAR, 1, 1};
 Type *ty_short = &(Type){TY_SHORT, 2, 2};
-Type *ty_int = &(Type){TY_INT, 4, 4};
-Type *ty_long = &(Type){TY_LONG, 8, 8};
+Type *ty_int = &(Type){TY_INT, 3, 3};
+Type *ty_long = &(Type){TY_LONG, 4, 4};
 
 Type *ty_uchar = &(Type){TY_CHAR, 1, 1, true};
 Type *ty_ushort = &(Type){TY_SHORT, 2, 2, true};
-Type *ty_uint = &(Type){TY_INT, 4, 4, true};
-Type *ty_ulong = &(Type){TY_LONG, 8, 8, true};
+Type *ty_uint = &(Type){TY_INT, 3, 3, true};
+Type *ty_ulong = &(Type){TY_LONG, 4, 4, true};
 
+// Floating point: 4 bytes each (no hardware FPU on eZ80)
 Type *ty_float = &(Type){TY_FLOAT, 4, 4};
-Type *ty_double = &(Type){TY_DOUBLE, 8, 8};
-Type *ty_ldouble = &(Type){TY_LDOUBLE, 16, 16};
+Type *ty_double = &(Type){TY_DOUBLE, 4, 4};
+Type *ty_ldouble = &(Type){TY_LDOUBLE, 4, 4};
 
 static Type *new_type(TypeKind kind, int size, int align) {
   Type *ty = calloc(1, sizeof(Type));
@@ -95,15 +104,14 @@ Type *copy_type(Type *ty) {
 }
 
 Type *pointer_to(Type *base) {
-  Type *ty = new_type(TY_PTR, 8, 8);
+  // eZ80 pointers are 3 bytes (24-bit)
+  Type *ty = new_type(TY_PTR, 3, 3);
   ty->base = base;
   ty->is_unsigned = true;
   return ty;
 }
 
 Type *func_type(Type *return_ty) {
-  // The C spec disallows sizeof(<function type>), but
-  // GCC allows that and the expression is evaluated to 1.
   Type *ty = new_type(TY_FUNC, 1, 1);
   ty->return_ty = return_ty;
   return ty;
@@ -117,14 +125,16 @@ Type *array_of(Type *base, int len) {
 }
 
 Type *vla_of(Type *base, Node *len) {
-  Type *ty = new_type(TY_VLA, 8, 8);
+  // VLA pointer is 3 bytes on eZ80
+  Type *ty = new_type(TY_VLA, 3, 3);
   ty->base = base;
   ty->vla_len = len;
   return ty;
 }
 
 Type *enum_type(void) {
-  return new_type(TY_ENUM, 4, 4);
+  // Enums are int-sized (3 bytes on eZ80)
+  return new_type(TY_ENUM, 3, 3);
 }
 
 Type *struct_type(void) {
@@ -140,6 +150,8 @@ static Type *get_common_type(Type *ty1, Type *ty2) {
   if (ty2->kind == TY_FUNC)
     return pointer_to(ty2);
 
+  // No floating point promotion on eZ80 (no FPU)
+  // But keep the logic for future software float support
   if (ty1->kind == TY_LDOUBLE || ty2->kind == TY_LDOUBLE)
     return ty_ldouble;
   if (ty1->kind == TY_DOUBLE || ty2->kind == TY_DOUBLE)
@@ -147,9 +159,10 @@ static Type *get_common_type(Type *ty1, Type *ty2) {
   if (ty1->kind == TY_FLOAT || ty2->kind == TY_FLOAT)
     return ty_float;
 
-  if (ty1->size < 4)
+  // Integer promotion: anything smaller than int (3 bytes) promotes to int
+  if (ty1->size < 3)
     ty1 = ty_int;
-  if (ty2->size < 4)
+  if (ty2->size < 3)
     ty2 = ty_int;
 
   if (ty1->size != ty2->size)

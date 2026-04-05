@@ -1,5 +1,4 @@
 #include "chibicc.h"
-#include "memfile.h"
 
 void strarray_push(StringArray *arr, char *s) {
   if (!arr->data) {
@@ -19,15 +18,19 @@ void strarray_push(StringArray *arr, char *s) {
 
 // Takes a printf-style format string and returns a formatted string.
 char *format(char *fmt, ...) {
-  char *buf;
-  size_t buflen;
-  char tmpbuf[4096];
-  FILE *out = mem_fopen(tmpbuf, sizeof(tmpbuf));
-
+  char tmp[256];
   va_list ap;
   va_start(ap, fmt);
-  vfprintf(out, fmt, ap);
+  int n = vsnprintf(tmp, sizeof(tmp), fmt, ap);
   va_end(ap);
-  fclose(out);
+
+  char *buf = malloc(n + 1);
+  if (n < (int)sizeof(tmp)) {
+    memcpy(buf, tmp, n + 1);
+  } else {
+    va_start(ap, fmt);
+    vsnprintf(buf, n + 1, fmt, ap);
+    va_end(ap);
+  }
   return buf;
 }

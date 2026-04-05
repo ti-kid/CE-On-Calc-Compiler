@@ -23,6 +23,8 @@
 // https://github.com/rui314/chibicc/wiki/cpp.algo.pdf
 
 #include "chibicc.h"
+#include "builtin_headers.h"
+#include <fileioc.h>
 
 typedef struct MacroParam MacroParam;
 struct MacroParam {
@@ -682,35 +684,94 @@ static bool expand_macro(Token **rest, Token *tok) {
   return true;
 }
 //
-//  CE‑friendly include handling
-//  ============================
-//  The TI‑84+ CE has no filesystem, no directories, and no include paths.
-//  Therefore, #include is not supported in this build of chibicc.
+//  CE include handling
+//  ===================
+//  1. Built-in headers (stdio.h, stdlib.h, string.h, tice.h, etc.)
+//     are embedded as string constants in the compiler.
+//  2. Quoted includes (#include "FOO") try to load from an AppVar.
 //
 
 char *search_include_paths(char *filename) {
-    // No include paths on‑calc
     return NULL;
 }
 
-static char *search_include_next(char *filename) {
-    // No include_next on‑calc
-    return NULL;
-}
-
-// Read an #include argument, but always error because includes are unsupported.
+// Read the filename from an #include directive.
+// Handles both <filename> and "filename" forms.
+// Returns the filename string (without quotes/brackets).
 static char *read_include_filename(Token **rest, Token *tok, bool *is_dquote) {
-    error_tok(tok, "#include is not supported on this platform");
+  // #include "..."
+  if (tok->kind == TK_STR) {
+    *is_dquote = true;
+    // tok->str has the string contents (without quotes)
+    char *name = tok->str;
+    *rest = skip_line(tok->next);
+    return name;
+  }
+
+  // #include <...>
+  if (equal(tok, "<")) {
+    *is_dquote = false;
+    tok = tok->next;  // skip past '<'
+    // Collect tokens until >
+    char buf[128];
+    int len = 0;
+    while (!equal(tok, ">")) {
+      if (tok->kind == TK_EOF)
+        error_tok(tok, "expected closing '>'");
+      if (tok->has_space && len > 0 && len < (int)sizeof(buf) - 1)
+        buf[len++] = ' ';
+      int tlen = tok->len;
+      if (len + tlen < (int)sizeof(buf) - 1) {
+        memcpy(buf + len, tok->loc, tlen);
+        len += tlen;
+      }
+      tok = tok->next;
+    }
+    buf[len] = '\0';
+    *rest = skip_line(tok->next);
+
+    char *name = calloc(1, len + 1);
+    memcpy(name, buf, len + 1);
+    return name;
+  }
+
+  error_tok(tok, "expected a filename");
 }
 
-// Detect include guards — disabled on‑calc
-static char *detect_include_guard(Token *tok) {
+// Tokenize a built-in header string and preprocess it.
+static Token *include_builtin(const char *header_content, char *name) {
+  // Make a mutable copy of the header content
+  int slen = strlen(header_content);
+  char *buf = calloc(1, slen + 2);
+  memcpy(buf, header_content, slen);
+  buf[slen] = '\n';
+  buf[slen + 1] = '\0';
+
+  static int builtin_file_no = 100;
+  File *file = new_file(name, builtin_file_no++, buf);
+  Token *tok2 = tokenize(file);
+  return preprocess(tok2);
+}
+
+// Try to load an AppVar as a header.
+// Returns tokenized content or NULL if AppVar doesn't exist.
+static Token *include_appvar(char *name) {
+  ti_var_t var = ti_Open(name, "r");
+  if (!var)
     return NULL;
-}
 
-// Attempt to include a file — always error
-static Token *include_file(Token *tok, char *path, Token *filename_tok) {
-    error_tok(filename_tok, "#include is not supported on this platform");
+  int size = ti_GetSize(var);
+  char *buf = calloc(1, size + 2);
+  ti_Read(buf, size, 1, var);
+  ti_Close(var);
+  if (size == 0 || buf[size - 1] != '\n')
+    buf[size++] = '\n';
+  buf[size] = '\0';
+
+  static int appvar_file_no = 200;
+  File *file = new_file(name, appvar_file_no++, buf);
+  Token *tok2 = tokenize(file);
+  return preprocess(tok2);
 }
 
 
@@ -755,15 +816,49 @@ static Token *preprocess2(Token *tok) {
     Token *start = tok;
     tok = tok->next;
 
-    // --- CE version: no #include support ---
     if (equal(tok, "include")) {
-      error_tok(tok, "#include is not supported on this platform");
+      bool is_dquote;
+      char *filename = read_include_filename(&tok, tok->next, &is_dquote);
+
+      // 1. Check built-in headers
+      const char *builtin = find_builtin_header(filename);
+      if (builtin) {
+        Token *inc = include_builtin(builtin, filename);
+        // Append the rest of tokens after the included content
+        Token *t = inc;
+        while (t && t->kind != TK_EOF)
+          t = t->next;
+        // Splice: connect end of included tokens to remaining tokens
+        if (t)
+          *t = *tok;  // overwrite EOF with continuation
+        else
+          inc = tok;
+        tok = inc;
+        continue;
+      }
+
+      // 2. Try loading from AppVar (quoted includes)
+      if (is_dquote) {
+        Token *inc = include_appvar(filename);
+        if (inc) {
+          Token *t = inc;
+          while (t && t->kind != TK_EOF)
+            t = t->next;
+          if (t)
+            *t = *tok;
+          else
+            inc = tok;
+          tok = inc;
+          continue;
+        }
+      }
+
+      error_tok(start, "cannot find header: %s", filename);
     }
 
     if (equal(tok, "include_next")) {
-      error_tok(tok, "#include_next is not supported on this platform");
+      error_tok(tok, "#include_next is not supported");
     }
-    // ---------------------------------------
 
     if (equal(tok, "define")) {
       read_macro_definition(&tok, tok->next);

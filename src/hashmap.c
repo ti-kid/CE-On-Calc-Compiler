@@ -161,5 +161,5 @@ void hashmap_test(void) {
     hashmap_put(map, format("key %d", i), (void *)(size_t)i);
 
   assert(hashmap_get(map, "no such key") == NULL);
-  printf("OK\n");
+  os_PutStrFull("OK");
 }

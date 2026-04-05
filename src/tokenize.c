@@ -1,5 +1,5 @@
 #include "chibicc.h"
-#include "memfile.h"
+#include <fileioc.h>
 
 // Input file
 static File *current_file;
@@ -13,12 +13,22 @@ static bool at_bol;
 // True if the current position follows a space character
 static bool has_space;
 
+// CE-compatible error output buffer
+static char err_buf[256];
+
+static void ce_print_err(const char *msg) {
+  os_PutStrFull(msg);
+  os_NewLine();
+}
+
 // Reports an error and exit.
 void error(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
+  vsnprintf(err_buf, sizeof(err_buf), fmt, ap);
+  va_end(ap);
+  ce_print_err(err_buf);
+  while (!os_GetCSC());
   exit(1);
 }
 
@@ -28,26 +38,14 @@ void error(char *fmt, ...) {
 //               ^ <error message here>
 static void verror_at(char *filename, char *input, int line_no,
                       char *loc, char *fmt, va_list ap) {
-  // Find a line containing `loc`.
-  char *line = loc;
-  while (input < line && line[-1] != '\n')
-    line--;
+  (void)input; // unused on CE - no room for context display
 
-  char *end = loc;
-  while (*end && *end != '\n')
-    end++;
+  snprintf(err_buf, sizeof(err_buf), "%s:%d: ", filename, line_no);
+  ce_print_err(err_buf);
 
-  // Print out the line.
-  int indent = fprintf(stderr, "%s:%d: ", filename, line_no);
-  fprintf(stderr, "%.*s\n", (int)(end - line), line);
-
-  // Show the error message.
-  int pos = display_width(line, loc - line) + indent;
-
-  fprintf(stderr, "%*s", pos, ""); // print pos spaces.
-  fprintf(stderr, "^ ");
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
+  vsnprintf(err_buf, sizeof(err_buf), fmt, ap);
+  ce_print_err(err_buf);
+  while (!os_GetCSC());
 }
 
 void error_at(char *loc, char *fmt, ...) {
@@ -432,7 +430,8 @@ static void convert_pp_number(Token *tok) {
 
   // If it's not an integer, it must be a floating point constant.
   char *end;
-  long double val = strtold(tok->loc, &end);
+  // CE has no long double; use strtof for all float types
+  long double val = (long double)strtof(tok->loc, &end);
 
   Type *ty;
   if (*end == 'f' || *end == 'F') {
@@ -637,42 +636,30 @@ Token *tokenize(File *file) {
   return head.next;
 }
 
-// Returns the contents of a given file.
+// Load source code from a TI AppVar by name.
+// Returns a malloc'd NUL-terminated string, or NULL on failure.
 static char *read_file(char *path) {
-  FILE *fp;
+  ti_var_t var = ti_Open(path, "r");
+  if (!var)
+    return NULL;
 
-  if (strcmp(path, "-") == 0) {
-    // By convention, read from stdin if a given filename is "-".
-    fp = stdin;
-  } else {
-    fp = fopen(path, "r");
-    if (!fp)
-      return NULL;
+  uint16_t size = ti_GetSize(var);
+  // +2 for possible '\n' and NUL terminator
+  char *buf = malloc(size + 2);
+  if (!buf) {
+    ti_Close(var);
+    return NULL;
   }
 
-  char *buf;
-  size_t buflen;
-  char tmpbuf[4096]; 
-  FILE *out = mem_fopen(tmpbuf, sizeof(tmpbuf));
+  ti_Read(buf, size, 1, var);
+  ti_Close(var);
 
-  // Read the entire file.
-  for (;;) {
-    char buf2[4096];
-    int n = fread(buf2, 1, sizeof(buf2), fp);
-    if (n == 0)
-      break;
-    fwrite(buf2, 1, n, out);
-  }
+  // Ensure the last line ends with '\n'
+  size_t len = size;
+  if (len == 0 || buf[len - 1] != '\n')
+    buf[len++] = '\n';
+  buf[len] = '\0';
 
-  if (fp != stdin)
-    fclose(fp);
-
-  // Make sure that the last line is properly terminated with '\n'.
-  fflush(out);
-  if (buflen == 0 || buf[buflen - 1] != '\n')
-    fputc('\n', out);
-  fputc('\0', out);
-  mem_fclose(out);
   return buf;
 }
 

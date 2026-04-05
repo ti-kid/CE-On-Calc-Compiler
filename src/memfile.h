@@ -1,44 +1,68 @@
-#ifndef MEMFILE_H
-#define MEMFILE_H
+#ifndef OUTBUF_H
+#define OUTBUF_H
 
 #include <stdio.h>
 #include <stddef.h>
+#include <stdarg.h>
+#include <string.h>
 
+// Simple output string buffer - replaces the broken FILE* cast approach.
+// Used by codegen and format() to write formatted text to memory.
 typedef struct {
     char *buf;
     size_t pos;
     size_t cap;
-} MEMFILE;
+} OutBuf;
 
-static inline FILE *mem_fopen(char *buf, size_t cap) {
-    MEMFILE *m = malloc(sizeof(MEMFILE));
-    m->buf = buf;
-    m->pos = 0;
-    m->cap = cap;
-    return (FILE*)m;
+static inline void outbuf_init(OutBuf *ob, char *buf, size_t cap) {
+    ob->buf = buf;
+    ob->pos = 0;
+    ob->cap = cap;
+    if (cap > 0)
+        buf[0] = '\0';
 }
 
-static inline int mem_fputc(int c, FILE *fp) {
-    MEMFILE *m = (MEMFILE*)fp;
-    if (m->pos < m->cap - 1) {
-        m->buf[m->pos++] = c;
-        m->buf[m->pos] = '\0';
+static inline void outbuf_putc(OutBuf *ob, char c) {
+    if (ob->pos < ob->cap - 1) {
+        ob->buf[ob->pos++] = c;
+        ob->buf[ob->pos] = '\0';
     }
-    return c;
 }
 
-static inline size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *fp) {
-    MEMFILE *m = (MEMFILE*)fp;
-    size_t total = size * nmemb;
-    for (size_t i = 0; i < total; i++)
-        mem_fputc(((char*)ptr)[i], fp);
-    return nmemb;
+static inline void outbuf_puts(OutBuf *ob, const char *s) {
+    while (*s)
+        outbuf_putc(ob, *s++);
 }
 
-static inline int mem_fclose(FILE *fp) {
-    free(fp);
-    return 0;
+static inline void outbuf_printf(OutBuf *ob, const char *fmt, ...) {
+    if (ob->pos >= ob->cap - 1)
+        return;
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(ob->buf + ob->pos, ob->cap - ob->pos, fmt, ap);
+    va_end(ap);
+    if (n > 0) {
+        if ((size_t)n >= ob->cap - ob->pos)
+            ob->pos = ob->cap - 1;
+        else
+            ob->pos += n;
+    }
+}
+
+static inline void outbuf_vprintf(OutBuf *ob, const char *fmt, va_list ap) {
+    if (ob->pos >= ob->cap - 1)
+        return;
+    int n = vsnprintf(ob->buf + ob->pos, ob->cap - ob->pos, fmt, ap);
+    if (n > 0) {
+        if ((size_t)n >= ob->cap - ob->pos)
+            ob->pos = ob->cap - 1;
+        else
+            ob->pos += n;
+    }
+}
+
+static inline size_t outbuf_len(OutBuf *ob) {
+    return ob->pos;
 }
 
 #endif
-
