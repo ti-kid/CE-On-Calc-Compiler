@@ -4442,7 +4442,7 @@ BB21_3:
 	section	.text,"ax",@progbits
 	public	___main_argc_argv
 ___main_argc_argv:
-	ld	hl, -70
+	ld	hl, -73
 	call	__frameset
 	ld	iy, -3145600
 	call	_os_ClrLCD
@@ -4603,7 +4603,7 @@ BB22_17:
 	pop	de
 	push	hl
 	call	_parse
-	ld	(ix - 55), hl
+	ld	(ix - 52), hl
 	pop	hl
 	ld	hl, 16384
 	push	hl
@@ -4634,23 +4634,23 @@ BB22_20:
 	ld	(ix - 6), hl
 	ld	hl, 16384
 	ld	(ix - 3), hl
-	ld	(ix - 52), iy
+	ld	(ix - 55), iy
 	ld	(iy), l
 	pea	ix - 9
-	ld	hl, (ix - 55)
+	ld	hl, (ix - 52)
 	push	hl
 	call	_codegen
 	pop	hl
 	pop	hl
 	ld	hl, (ix - 6)
-	ld	(ix - 67), hl
+	ld	(ix - 64), hl
 	ld	c, 2
 	call	__ishl
 	inc	hl
 	push	hl
 	call	_malloc
-	ld	iy, (ix - 67)
-	ld	(ix - 55), hl
+	ld	iy, (ix - 64)
+	ld	(ix - 52), hl
 	pop	hl
 	ld	de, 0
 	push	de
@@ -4659,88 +4659,142 @@ BB22_21:
 	lea	hl, iy
 	or	a, a
 	sbc	hl, de
-	jp	z, BB22_36
-	ld	hl, (ix - 52)
+	jp	z, BB22_45
+	ld	hl, (ix - 55)
+	ld	(ix - 67), de
 	add	hl, de
-	ld	l, (hl)
-	ld	a, l
+	ld	e, (hl)
+	ld	a, e
 	cp	a, 9
-	ld	(ix - 70), de
-	jr	nz, BB22_24
-	push	bc
-	pop	de
-	ld	(ix - 64), de
-	ld	bc, (ix - 55)
-	push	bc
-	pop	iy
-	add	iy, de
+	jr	nz, BB22_25
+	ld	iy, (ix - 52)
+	add	iy, bc
 	ld	(iy), 41
 	ld	(iy + 1), 41
-	ex	de, hl
+	push	bc
+	pop	hl
 	ld	de, 3
 	add	hl, de
-	push	bc
+	ld	de, (ix - 52)
+	push	de
 	pop	iy
-	push	bc
-	pop	de
-	ld	bc, (ix - 64)
 	add	iy, bc
 	ld	(iy + 2), 41
-	ld	iy, (ix - 67)
+	ld	iy, (ix - 64)
 	push	hl
 	pop	bc
 	ex	de, hl
-	ld	e, 41
-	jr	BB22_35
 BB22_24:
-	ld	a, l
+	ld	d, 41
+	jp	BB22_44
+BB22_25:
+	ld	a, e
 	cp	a, 10
-	jr	nz, BB22_26
-	ld	e, 63
-	jr	BB22_34
-BB22_26:
-	ld	a, l
+	ld	hl, (ix - 52)
+	jr	nz, BB22_27
+	ld	d, 63
+	jp	BB22_44
+BB22_27:
+	ld	a, e
 	cp	a, 32
-	jr	nz, BB22_28
-	ld	e, 41
-	jr	BB22_34
-BB22_28:
-	ld	a, l
-	cp	a, 44
-	jr	nz, BB22_30
-	ld	e, 43
-	jr	BB22_34
-BB22_30:
-	ld	a, l
+	jr	z, BB22_24
+	ld	a, e
+	add	a, -40
+	cp	a, 22
+	push	bc
+	pop	hl
+	inc	hl
+	ld	(ix - 73), hl
+	jr	c, BB22_31
+	ld	a, e
 	cp	a, 95
-	jr	nz, BB22_32
-	ld	e, 113
-	jr	BB22_34
+	jr	nz, BB22_33
+	ld	de, (ix - 52)
+	push	de
+	pop	hl
+	add	hl, bc
+	ld	(hl), -69
+	ex	de, hl
+	ld	bc, (ix - 73)
+	ld	d, -39
+	jr	BB22_44
+BB22_31:
+	or	a, a
+	sbc	hl, hl
+	ld	(ix - 70), hl
+	ld	hl, (ix - 70)
+	ld	l, a
+	ld	(ix - 70), hl
+	ld	hl, JTI22_0
+	ld	a, e
+	ld	de, (ix - 70)
+	add	hl, de
+	ld	de, (ix - 70)
+	add	hl, de
+	ld	de, (ix - 70)
+	add	hl, de
+	ld	e, a
+	ld	hl, (hl)
+	jp	(hl)
 BB22_32:
-	ld	a, l
+	ld	d, 16
+	jr	BB22_43
+BB22_33:
+	ld	a, e
 	add	a, -97
 	ld	h, a
-	ld	a, l
+	ld	a, e
 	add	a, -32
-	ld	e, a
+	ld	d, a
 	ld	a, h
 	cp	a, 26
-	jr	c, BB22_34
-	ld	e, l
-BB22_34:
-	ld	hl, (ix - 55)
+	jr	c, BB22_43
+	ld	d, e
+	jr	BB22_43
 BB22_35:
+	ld	d, 17
+	jr	BB22_43
+BB22_36:
+	ld	d, 112
+	jr	BB22_43
+BB22_37:
+	ld	d, 43
+	jr	BB22_43
+BB22_38:
+	ld	d, -80
+	jr	BB22_43
+BB22_39:
+	ld	d, 58
+	jr	BB22_43
+BB22_40:
+	ld	d, 62
+	jr	BB22_43
+BB22_41:
+	ld	de, (ix - 52)
+	push	de
+	pop	hl
 	add	hl, bc
-	ld	(hl), e
+	ld	(hl), -69
+	ex	de, hl
+	ld	bc, (ix - 73)
+	ld	d, -42
+	jr	BB22_44
+BB22_42:
+	ld	d, 106
+BB22_43:
+	ld	hl, (ix - 52)
+BB22_44:
+	add	hl, bc
+	ld	(hl), d
 	inc	bc
-	ld	de, (ix - 70)
+	ld	de, (ix - 67)
 	inc	de
 	jp	BB22_21
-BB22_36:
+BB22_45:
 	push	bc
-	ld	hl, (ix - 55)
-	push	hl
 	ld	hl, (ix - 52)
+	push	hl
+	ld	hl, (ix - 55)
 	push	hl
 	ld	(ix - 64), bc
 	call	_memcpy
@@ -4749,7 +4803,7 @@ BB22_36:
 	pop	hl
 	ld	hl, (ix - 64)
 	ld	(ix - 6), hl
-	ld	hl, (ix - 55)
+	ld	hl, (ix - 52)
 	push	hl
 	call	_free
 	pop	hl
@@ -4794,24 +4848,24 @@ BB22_36:
 	pop	hl
 	pop	hl
 	or	a, a
-	jr	nz, BB22_38
+	jr	nz, BB22_47
 	ld	hl, _.str.9.209
-	jr	BB22_39
-BB22_38:
+	jr	BB22_48
+BB22_47:
 	ld	hl, (ix - 6)
 	push	de
-	ld	(ix - 55), de
+	ld	(ix - 52), de
 	ld	de, 1
 	push	de
 	push	hl
-	ld	hl, (ix - 52)
+	ld	hl, (ix - 55)
 	push	hl
 	call	_ti_Write
 	pop	hl
 	pop	hl
 	pop	hl
 	pop	hl
-	ld	hl, (ix - 55)
+	ld	hl, (ix - 52)
 	push	hl
 	call	_ti_Close
 	pop	hl
@@ -4820,7 +4874,7 @@ BB22_38:
 	call	_os_PutStrFull
 	pop	hl
 	ld	hl, (ix - 58)
-BB22_39:
+BB22_48:
 	push	hl
 	call	_os_PutStrFull
 	pop	hl
@@ -4830,11 +4884,11 @@ BB22_39:
 	push	hl
 	call	_os_PutStrFull
 	pop	hl
-BB22_40:
+BB22_49:
 	call	_os_GetCSC
 	or	a, a
-	jr	z, BB22_40
-	ld	hl, (ix - 52)
+	jr	z, BB22_49
+	ld	hl, (ix - 55)
 	push	hl
 	call	_free
 	pop	hl
@@ -4842,6 +4896,31 @@ BB22_40:
 	sbc	hl, hl
 	jp	BB22_12
 	section	.text,"ax",@progbits
+	section	.rodata,"a",@progbits
+	private	JTI22_0
+JTI22_0:
+	dl	BB22_32
+	dl	BB22_35
+	dl	BB22_33
+	dl	BB22_36
+	dl	BB22_37
+	dl	BB22_38
+	dl	BB22_39
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_33
+	dl	BB22_40
+	dl	BB22_41
+	dl	BB22_33
+	dl	BB22_42
 
 	section	.text,"ax",@progbits
 	public	_new_cast
@@ -34107,9 +34186,9 @@ _char_width.range2:
 	extern	_strncmp
 	extern	_strstr
 	extern	_snprintf
-	extern	_strncpy
 	extern	_strlen
 	extern	__setflag
+	extern	_strncpy
 	extern	_os_HomeUp
 	extern	__fsub
 	extern	__Unwind_SjLj_Register

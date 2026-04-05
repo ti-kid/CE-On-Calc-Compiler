@@ -105,7 +105,25 @@ int main(int argc, char **argv) {
             } else if (c == '\n') {
                 tmp[j++] = 0x3F;
             } else if (c == '_') {
-                tmp[j++] = 0x71;
+                tmp[j++] = 0xBB;
+                tmp[j++] = 0xD9;
+            } else if (c == '-') {
+                tmp[j++] = 0xB0;
+            } else if (c == '=') {
+                tmp[j++] = 0x6A;
+            } else if (c == '+') {
+                tmp[j++] = 0x70;
+            } else if (c == ';') {
+                tmp[j++] = 0xBB;
+                tmp[j++] = 0xD6;
+            } else if (c == '(') {
+                tmp[j++] = 0x10;
+            } else if (c == ')') {
+                tmp[j++] = 0x11;
+            } else if (c == ':') {
+                tmp[j++] = 0x3E;
+            } else if (c == '.') {
+                tmp[j++] = 0x3A;
             } else if (c == ',') {
                 tmp[j++] = 0x2B;
             } else if (c >= 'a' && c <= 'z') {
